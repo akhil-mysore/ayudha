@@ -1,26 +1,25 @@
 #!/usr/bin/python3
 
-import pandas
+import csv
 import argparse
 from datetime import datetime
 
-
 date_format = "%m/%d/%Y"
 
-
 def parse_args():
+    '''
+    Parse command line arguments '''
     parser = argparse.ArgumentParser(description="profit loss")
     parser.add_argument(
         "-i",
         dest="infile",
         type=str,
         nargs="?",
-        default="other\\transactions.csv",
-        help="input transaction file ",
+        default="./transactions.csv",
+        help="input transaction csv file ",
     )
     args = parser.parse_args()
     return args
-
 
 # string containing key words to decide if a transaction is to be considered for
 # profit loss calculation
@@ -59,27 +58,30 @@ def cal_profit_per_year():
 
 if __name__ == "__main__":
     args = parse_args()
-    with open(args.infile) as csv_file:
-        csv_reader = pandas.read_csv(
-            csv_file, dtype={"DESCRIPTION": str, "AMOUNT": float}
-        )
-        index = 0
+    with open( args.infile, 'r' ) as csv_file:
+        csvHandler = csv.DictReader( csv_file )
+
         profit_l = 0.0
         first_trade = True
         total_inv = 0.0
-        for s in csv_reader["DESCRIPTION"]:
-            if (type(s) == str) and (is_profit_loss(s)):
+
+        loopCount = 0
+        for row in csvHandler:
+            desc = row[ 'DESCRIPTION' ]
+            if not desc:
+                continue
+            print( f'Processing {loopCount} {desc}' )
+            if is_profit_loss( desc ):
                 if first_trade:
-                    first_date = csv_reader["DATE"][index]
+                    first_date = row["DATE"]
                     first_trade = False
-                profit_l += csv_reader["AMOUNT"][index]
-            elif (type(s) == str) and (is_investment(s)):
-                total_inv += csv_reader["AMOUNT"][index]
+                profit_l += float( row["AMOUNT"] )
+            elif is_investment( desc ):
+                total_inv += float( row["AMOUNT"] )
+            loopCount+= 1
 
-            index += 1
-
-    print("total profit till date ($) -", "%.2f" % profit_l)
-    print("date of first investment - ", first_date)
+    print("total profit till date ($): ", "%.2f" % profit_l)
+    print("date of first investment: ", first_date)
     print(
-        "percentage profit - ", cal_tot_profit_loss(profit_l, total_inv),
+        "percentage profit: ", cal_tot_profit_loss(profit_l, total_inv),
     )
