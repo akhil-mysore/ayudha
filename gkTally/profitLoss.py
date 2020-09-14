@@ -44,7 +44,7 @@ class transaction_finder:
     def is_investment(self, s):
         return self.str_find(s, investment)
 
-    def parse_transactions(self):
+    def parseTransactions(self):
         with open(self.in_f, "r") as csv_file:
             csvHandler = csv.DictReader(csv_file)
             loopCount = 0
@@ -80,7 +80,7 @@ class transaction_finder:
 if __name__ == "__main__":
     args = parse_args()
     tx_parser = transaction_finder(args.infile)
-    tx_parser.parse_transactions()
+    tx_parser.parseTransactions()
     print("total profit/loss till date ($): ", "%.2f" % tx_parser.profit_l)
     print("date of first investment: ", tx_parser.first_date)
     print(
