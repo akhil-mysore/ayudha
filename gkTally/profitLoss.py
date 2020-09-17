@@ -3,7 +3,7 @@ import argparse
 from datetime import datetime
 
 
-def parse_args():
+def parseArgs():
     """
     Parse command line arguments """
     parser = argparse.ArgumentParser(description="profit loss")
@@ -21,68 +21,70 @@ def parse_args():
 
 # string containing key words to decide if a transaction is to be considered for
 # profit loss calculation
-profit_loss = ["bought", "sold"]
-investment = ["funding", "wire"]
+profitLossIncludeList = ["bought", "sold"]
+# exclude list - transations that needs to be excluded
+excludeList = ["Bought 100 AAPL"]
+# Investment List - transactions that needs to be considered as investment
+investmentList = ["funding", "wire"]
 
 
-class transaction_finder:
+class transactionFinder:
     def __init__(self, in_file):
         self.in_f = in_file
-        self.profit_l = 0.0
-        self.first_date = ""
-        self.total_inv = 0.0
+        self.profitL = 0.0
+        self.firstDate = ""
+        self.totalInv = 0.0
 
-    def str_find(self, s, key):
+    def strFind(self, s, key):
         for i in key:
-            if ((s.lower()).find(i)) != -1:
+            if ((s.lower()).find(i.lower())) != -1:
                 return True
         return False
 
-    def is_profit_loss(self, s):
-        return self.str_find(s, profit_loss)
+    def isProfitLoss(self, s):
+        return self.strFind(s, profitLossIncludeList) and (
+            not self.strFind(s, excludeList)
+        )
 
-    def is_investment(self, s):
-        return self.str_find(s, investment)
+    def isInvestment(self, s):
+        return self.strFind(s, investmentList)
 
     def parseTransactions(self):
         with open(self.in_f, "r") as csv_file:
             csvHandler = csv.DictReader(csv_file)
             loopCount = 0
-            first_trade = True
             for row in csvHandler:
                 desc = row["DESCRIPTION"]
                 if not desc:
                     continue
                 # print(f"Processing {loopCount} {desc}")
-                if self.is_profit_loss(desc):
-                    if first_trade:
-                        self.first_date = row["DATE"]
-                        first_trade = False
-                    self.profit_l += float(row["AMOUNT"])
-                elif self.is_investment(desc):
-                    self.total_inv += float(row["AMOUNT"])
+                if self.isProfitLoss(desc):
+                    if self.firstDate == "":
+                        self.firstDate = row["DATE"]
+                    self.profitL += float(row["AMOUNT"])
+
+                elif self.isInvestment(desc):
+                    self.totalInv += float(row["AMOUNT"])
                 loopCount += 1
 
-    def get_tot_profit_loss(self):
+    def getTotProfitLoss(self):
 
-        self.total_per_profit = (100 * self.profit_l) / self.total_inv
+        self.total_per_profit = (100 * self.profitL) / self.totalInv
         return self.total_per_profit
 
-    def cal_profit_per_year(self):
+    def calProfitPerYear(self):
         None
         # date_format = "%m/%d/%Y"
         # d1 = datetime.today()
-        # d2 = datetime.strptime(first_date, date_format)
+        # d2 = datetime.strptime(firstDate, date_format)
         # delta = d1 - d2
-        # per_profit = (365 * profit_l) / delta.days
+        # per_profit = (365 * profitL) / delta.days
 
 
 if __name__ == "__main__":
-    args = parse_args()
-    tx_parser = transaction_finder(args.infile)
+    args = parseArgs()
+    tx_parser = transactionFinder(args.infile)
     tx_parser.parseTransactions()
-    print("total profit/loss till date ($): ", "%.2f" % tx_parser.profit_l)
-    print("date of first investment: ", tx_parser.first_date)
-    print(
-        "percentage profit: ", tx_parser.get_tot_profit_loss(),
-    )
+    print(f"total profit/loss till date ($): {tx_parser.profitL:.2f}")
+    print("date of first investment: ", tx_parser.firstDate)
+    print(f"percentage profit:{tx_parser.getTotProfitLoss():.2f}")
